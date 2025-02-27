@@ -3,6 +3,8 @@
 #include "buttons.h"
 #include "keypad.h"
 #include "u8g2.h"
+#include "adc.h"
+#include "oled_ssd1322.h"
 
 Ticker blinky_switch;
 
@@ -15,15 +17,15 @@ void blinkenlights()
     led_fp_sw = 1;
     led_fp_red = 1;
     mcp.digitalWrite(MCP_LED_BLUE_PIN, 0);
-    ThisThread::sleep_for(250ms);
+    ThisThread::sleep_for(500ms);
     led_fp_red = 0;
     led_fp_green = 1;
     mcp.digitalWrite(MCP_LED_BLUE_PIN, 0);
-    ThisThread::sleep_for(250ms);
+    ThisThread::sleep_for(500ms);
     led_fp_red = 0;
     led_fp_green = 0;
     mcp.digitalWrite(MCP_LED_BLUE_PIN, 1);
-    ThisThread::sleep_for(250ms);
+    ThisThread::sleep_for(500ms);
     buzz = 0;
     led_fp_sw = 0;
     led_fp_red = 0;
@@ -46,9 +48,9 @@ void task_blinky_switch_init()
 
 void keypad_test()
 {
-    if (keypad_keypress) {
-        keypad_keypress = 0;
-        printf("keypress: '%c' (%02X)\n", keypad_key, keypad_key);
+    if (keypad_has_key()) {
+        printf("keypress: '%c'\n", keypad_get_char());
+        keypad_clear_keys();
     }
 }
 
@@ -61,15 +63,14 @@ void keypad_test_oled()
     static int y = yhome;
     char buf[2] = {0x00, 0x00};
 
-    if (keypad_keypress) {
-        keypad_keypress = 0;
+    if (keypad_has_key()) {
+        buf[0] = keypad_get_char();
+        printf("# keypad_test_oled(): keypress '%c' cur_xy=%i,%i    ", buf[0], x, y);
 
-        printf("# keypad_test_oled(): keypress '%c' (%02X)    cur_xy=%i,%i    ", keypad_key, keypad_key, x, y);
-        
-        buf[0] = keypad_key;
-        switch (keypad_key) {
+        switch (buf[0]) {
             case '0' ... '9':
             case '.':
+                //printf("DIGIT pressed\n");
                 u8g2_SetDrawColor(&oled, 0);
                 u8g2_DrawBox(&oled, x, y-u8g2_GetMaxCharHeight(&oled), u8g2_GetMaxCharWidth(&oled), u8g2_GetMaxCharHeight(&oled));
                 u8g2_SetDrawColor(&oled, 1);
@@ -77,7 +78,8 @@ void keypad_test_oled()
                 u8g2_SendBuffer(&oled);
                 x += u8g2_GetMaxCharWidth(&oled) + 1;
                 break;
-            case KEYPAD_KEY_ESC:
+            case '\e':
+                //printf("ESC pressed\n");
                 x = xhome;
                 y = yhome;
                 u8g2_SetDrawColor(&oled, 0);
@@ -85,11 +87,13 @@ void keypad_test_oled()
 	            u8g2_SetDrawColor(&oled, 1);
 	            u8g2_SendBuffer(&oled);
                 break;
-            case KEYPAD_KEY_ENTER:
+            case '\n':
+                //printf("ENTER pressed\n");
                 x = xhome;
                 y += u8g2_GetMaxCharHeight(&oled) + 1;
                 break;
-            case KEYPAD_KEY_DEL:
+            case 0x7f:
+                //printf("DEL pressed\n");
                 if (x >= xhome + u8g2_GetMaxCharWidth(&oled)) {
                     x -= u8g2_GetMaxCharWidth(&oled) + 1;
                     u8g2_SetDrawColor(&oled, 0);
@@ -98,15 +102,19 @@ void keypad_test_oled()
                     u8g2_SendBuffer(&oled);
                 }
                 break;
-            case KEYPAD_KEY_UP:
+            case 'U':
+                //printf("UP pressed\n");
                 y -= u8g2_GetMaxCharHeight(&oled) + 1;
                 break;
-            case KEYPAD_KEY_DOWN:
+            case 'D':
+                //printf("DOWN pressed\n");
                 y += u8g2_GetMaxCharWidth(&oled) + 1;
                 break;
             default:
+                //printf("DEFAULT\n");
                 break;
         }
+        printf("trying_xy=%i,%i\t", x, y);
 
         if (x > u8g2_GetDisplayWidth(&oled) - u8g2_GetMaxCharWidth(&oled)) {
             x = xhome;

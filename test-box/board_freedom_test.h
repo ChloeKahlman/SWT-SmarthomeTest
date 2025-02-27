@@ -3,7 +3,6 @@
 
 #include "board_freedom.h"
 
-
 void blinkenlights();
 void task_blinky_switch_init();
 void task_blinky_switch();

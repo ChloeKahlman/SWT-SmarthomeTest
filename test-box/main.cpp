@@ -5,7 +5,8 @@
 #include "board_freedom_test.h"
 #include "i2cscan.h"
 #include "mcp4728.h"
-
+#include "oled_ssd1322.h"
+#include "adc.h"
 
 // Extra OS debug. Triggers mbed-os recompilation if changed.
 #if(1)
@@ -20,6 +21,10 @@ const char _prog_name[]="Bugzoo_Freedom_Controller_frdm-k66f";
 const int _prog_ver_major = 0;
 const int _prog_ver_minor = 1;
 
+DigitalIn greenButton(PTB5);
+DigitalIn blueButton(PTB6);
+DigitalIn redButton(PTB7);
+DigitalIn blackButton(PTC16);
 
 void demo() {
     
@@ -77,14 +82,45 @@ void set_pwm(int * values) {
 
 }
 
+void button_test_main(){
+    if ( !(millis % 5000) ) {
+        printf("# button_test():\t");
+
+        if (greenButton){
+            printf("Green button OFF\t");
+        } else {
+            printf("Green button ON \t");
+        }
+
+        if (redButton){
+            printf("Red button OFF\t");
+        } else {
+            printf("Red button ON \t");
+        }
+
+        if (blueButton){
+            printf("Blue button OFF\t");
+        } else {
+            printf("Blue button ON \t");
+        }
+
+        if (blackButton){
+            printf("Black button OFF\t");
+        } else {
+            printf("Black button ON \t");
+        }
+        printf("\n");
+    }
+}
+
 int main() {
     board_init();
     thread_sleep_for(10);
 
-	printf("# %s - Ver %i.%i - Compiled %s %s \n", _prog_name, _prog_ver_major, _prog_ver_minor, __DATE__, __TIME__ );
+    printf("# %s - Ver %i.%i - Compiled %s %s \n", _prog_name, _prog_ver_major, _prog_ver_minor, __DATE__, __TIME__ );
     printf("This is %f\n", 3.1234567);
 
-    if (button_0 == 0 && button_1 == 0) {
+    if (redButton == 0 && blackButton == 0) {
         demo();
     }
 
@@ -99,17 +135,18 @@ int main() {
         // led_fp_green = 0;
         // ThisThread::sleep_for(499ms);
 
-        keypad_scan();
         keypad_test_oled();
         adc_test();
         dac_test();
         din_dout_test();
-        //if (button_update()) {
-        //     button_test();
-        //}
-        int values[4];
-        poll_analog(values);
-        set_pwm(values);
+        button_test_main();
+        
+
+        // int values[4];
+        // poll_analog(values);
+        // set_pwm(values);
+
+
     }
 
     return 0;
