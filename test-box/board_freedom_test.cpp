@@ -260,5 +260,3 @@ void din_dout_test()
         }
     }
 }
-
-
